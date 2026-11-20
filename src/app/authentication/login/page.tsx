@@ -21,7 +21,8 @@ interface LoginFieldErrors {
   password?: string;
 }
 
-const EMAIL_PATTERN = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
+const EMAIL_PATTERN =
+  /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
 
 // ============================================================================
 // Helper Functions
@@ -71,7 +72,11 @@ function LoginContent(): ReactElement {
   const redirectPath = getSafeRedirectPath(searchParams.get('from'));
 
   // Auth listener via our Firebase 13 + React 19 compatible custom hook
-  const { user: currentUser, loading: authLoading, error: authStateError } = useAuth();
+  const {
+    user: currentUser,
+    loading: authLoading,
+    error: authStateError,
+  } = useAuth();
 
   // Form & UI states
   const [userEmail, setUserEmail] = useState<string>('');
@@ -80,12 +85,12 @@ function LoginContent(): ReactElement {
   const [loginError, setLoginError] = useState<string>('');
   const [submitting, setSubmitting] = useState<boolean>(false);
 
-  // Redirect authenticated users to their target route or homepage
+  // Redirect already-authenticated users (wait if a form submission & DB sync is in progress)
   useEffect(() => {
-    if (!authLoading && currentUser) {
+    if (!authLoading && !submitting && currentUser) {
       router.replace(redirectPath);
     }
-  }, [authLoading, currentUser, router, redirectPath]);
+  }, [authLoading, submitting, currentUser, router, redirectPath]);
 
   // Validate inputs before calling Firebase Auth
   const validateForm = (): boolean => {
@@ -108,8 +113,10 @@ function LoginContent(): ReactElement {
     return Object.keys(errors).length === 0;
   };
 
-  // Sign in with email and password
-  const handleFormSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
+  // Sign in with email and password, then sync user to MongoDB
+  const handleFormSubmit = async (
+    event: FormEvent<HTMLFormElement>
+  ): Promise<void> => {
     event.preventDefault();
     setLoginError('');
 
@@ -119,9 +126,38 @@ function LoginContent(): ReactElement {
 
     setSubmitting(true);
     try {
-      const credential = await signInWithEmailAndPassword(auth, userEmail.trim(), password);
+      const credential = await signInWithEmailAndPassword(
+        auth,
+        userEmail.trim(),
+        password
+      );
 
-      if (credential.user) {
+      const loggedInUser = credential.user;
+
+      if (loggedInUser) {
+        // Sync user with MongoDB so existing Firebase users are also saved in DB
+        if (loggedInUser.email) {
+          try {
+            const res = await fetch('/api/users/create-account', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                displayName: loggedInUser.displayName ?? 'Cosmetik Point User',
+                userNumber: loggedInUser.phoneNumber ?? '',
+                email: loggedInUser.email.toLowerCase(),
+                emailVerified: loggedInUser.emailVerified,
+                photoURL: loggedInUser.photoURL ?? '',
+              }),
+            });
+
+            if (!res.ok) {
+              console.warn('Failed to sync login user to DB:', res.status);
+            }
+          } catch (dbError: unknown) {
+            console.warn('Database sync error on login:', dbError);
+          }
+        }
+
         router.replace(redirectPath);
       }
     } catch (error: unknown) {
@@ -139,7 +175,7 @@ function LoginContent(): ReactElement {
   const displayError = loginError || authStateError?.message || '';
 
   return (
-    <div className='flex flex-col justify-center items-center min-h-screen py-8 px-4 bg-gray-50 text-black'>
+    <div className='flex flex-col justify-center items-center min-h-screen pt-28 pb-10 px-4 bg-gray-50 text-black'>
       {/* Main Container */}
       <div className='bg-white border border-gray-300 p-6 w-full max-w-sm rounded-md shadow-lg'>
         {/* Cosmetik Point Brand Heading */}
@@ -165,7 +201,9 @@ function LoginContent(): ReactElement {
               className='block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 focus:outline-none bg-white text-gray-900'
             />
             {fieldErrors.userEmail && (
-              <p className='text-red-500 text-sm mt-1'>{fieldErrors.userEmail}</p>
+              <p className='text-red-500 text-sm mt-1'>
+                {fieldErrors.userEmail}
+              </p>
             )}
           </div>
 
@@ -182,7 +220,9 @@ function LoginContent(): ReactElement {
               className='block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 focus:outline-none bg-white text-gray-900'
             />
             {fieldErrors.password && (
-              <p className='text-red-500 text-sm mt-1'>{fieldErrors.password}</p>
+              <p className='text-red-500 text-sm mt-1'>
+                {fieldErrors.password}
+              </p>
             )}
           </div>
 
@@ -205,9 +245,9 @@ function LoginContent(): ReactElement {
 
         {/* Divider */}
         <div className='flex items-center my-4'>
-          <div className='flex-grow h-px bg-gray-300' />
+          <div className='grow h-px bg-gray-300' />
           <span className='text-gray-400 text-sm px-2'>OR</span>
-          <div className='flex-grow h-px bg-gray-300' />
+          <div className='grow h-px bg-gray-300' />
         </div>
 
         {/* Social Login Buttons */}
