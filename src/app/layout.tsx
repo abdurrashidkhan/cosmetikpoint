@@ -3,7 +3,7 @@ import Navbar from '@/Components/Navbar/Navbar';
 import { ThemeProvider } from '@/context/ThemeContext/ThemeContext';
 import type { Metadata } from 'next';
 import { Geist_Mono, Playfair_Display, Plus_Jakarta_Sans, Poppins } from 'next/font/google';
-import type { ReactElement, ReactNode } from 'react';
+import { Suspense, type ReactElement, type ReactNode } from 'react';
 import './globals.css';
 
 // ============================================================================
@@ -83,9 +83,16 @@ export default function RootLayout({ children }: Readonly<RootLayoutProps>): Rea
         className={`${playfair.variable} ${jakarta.variable} ${poppins.variable} ${geistMono.variable} antialiased bg-surface text-ink`}
       >
         <ThemeProvider>
-          <Navbar />
+          {/* Wrap client URL-hook components in Suspense for Next.js 16 cacheComponents */}
+          <Suspense fallback={null}>
+            <Navbar />
+          </Suspense>
+
           {children}
-          <Footer />
+
+          <Suspense fallback={null}>
+            <Footer />
+          </Suspense>
         </ThemeProvider>
       </body>
     </html>

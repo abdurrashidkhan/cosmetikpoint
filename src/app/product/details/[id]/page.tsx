@@ -7,7 +7,7 @@ import FindOne from '@/database/find/findOne/findOne';
 import Link from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
 import type { ReactElement } from 'react';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useSyncExternalStore } from 'react';
 import { BsShieldCheck, BsTruck } from 'react-icons/bs';
 import { CiLocationOn } from 'react-icons/ci';
 import { GoDotFill } from 'react-icons/go';
@@ -97,11 +97,14 @@ const DEFAULT_SHADES: ShadeOption[] = [
 
 const DEFAULT_VOLUMES = ['30ml', '50ml', '100ml'];
 
+// No-op subscribe for client-only date calculation without SSR mismatch
+const emptySubscribe = (): (() => void) => () => {};
+
 // ============================================================================
-// Component
+// Inner Component (Reads runtime URL hooks inside <Suspense>)
 // ============================================================================
 
-export default function FindSingleProduct(): ReactElement {
+function FindSingleProductContent(): ReactElement {
   const params = useParams();
   const pathname = usePathname();
 
@@ -113,15 +116,22 @@ export default function FindSingleProduct(): ReactElement {
         ? rawId[0]
         : pathname?.split('/').filter(Boolean).pop();
 
+  const isClient = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
+
   const [selectedShade, setSelectedShade] = useState<string>(DEFAULT_SHADES[0].label);
   const [selectedVolume, setSelectedVolume] = useState<string>(DEFAULT_VOLUMES[0]);
   const [quantity, setQuantity] = useState<number>(1);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [product, setProduct] = useState<ProductRecord | null>(null);
   const [activeImage, setActiveImage] = useState<string>('');
-  const [deliveryEstimate, setDeliveryEstimate] = useState<string>('');
 
-  useEffect(() => {
+  // Calculate delivery estimate safely on client only
+  let deliveryEstimate = '';
+  if (isClient) {
     const estimate = new Date();
     estimate.setDate(estimate.getDate() + 3);
     const formattedDate = estimate.toLocaleDateString('en-US', {
@@ -129,19 +139,18 @@ export default function FindSingleProduct(): ReactElement {
       month: 'long',
     });
     const dayName = estimate.toLocaleDateString('en-US', { weekday: 'long' });
-    setDeliveryEstimate(`${dayName}, ${formattedDate}`);
-  }, []);
+    deliveryEstimate = `${dayName}, ${formattedDate}`;
+  }
 
   useEffect(() => {
-    if (!productId) {
-      setIsLoading(false);
-      return;
-    }
-
     let isMounted = true;
 
-    const fetchProduct = async () => {
-      setIsLoading(true);
+    const fetchProduct = async (): Promise<void> => {
+      if (!productId) {
+        if (isMounted) setIsLoading(false);
+        return;
+      }
+
       try {
         const result = (await FindOne(productId)) as {
           product?: ProductRecord;
@@ -192,17 +201,19 @@ export default function FindSingleProduct(): ReactElement {
 
   if (!product) {
     return (
-      <section className='container mx-auto px-4 pt-[8rem] pb-16 text-center'>
-        <h2 className='text-2xl font-semibold text-gray-800'>Product not found</h2>
-        <p className='mt-2 text-gray-600'>
-          The cosmetic product you are looking for is unavailable.
-        </p>
-        <Link
-          href='/products'
-          className='mt-5 inline-block rounded bg-purple-700 px-6 py-2.5 text-white hover:bg-purple-800 transition'
-        >
-          Browse Products
-        </Link>
+      <section className='container mx-auto px-4 pt-32 pb-16 text-center font-sans'>
+        <div className='max-w-md mx-auto rounded-3xl border border-line bg-brand-soft/60 p-8'>
+          <h2 className='font-display text-2xl font-bold text-ink'>Product not found</h2>
+          <p className='mt-2 text-sm text-ink-muted'>
+            The cosmetic product you are looking for is unavailable.
+          </p>
+          <Link
+            href='/products'
+            className='mt-5 inline-block rounded-full bg-brand hover:bg-brand-hover px-6 py-2.5 text-sm font-semibold text-brand-foreground transition-colors'
+          >
+            Browse Products
+          </Link>
+        </div>
       </section>
     );
   }
@@ -271,45 +282,44 @@ export default function FindSingleProduct(): ReactElement {
   const stockLeft = typeof product.stock === 'number' ? product.stock : 5;
 
   return (
-    <section>
-      <div className='container mx-auto px-2 pt-[8rem] pb-10'>
-        {/* Main Container */}
-        <div className='mx-auto bg-white shadow-lg rounded-lg p-6 md:flex'>
+    <section className='font-sans bg-surface text-ink'>
+      <div className='container mx-auto px-4 pt-32 pb-12'>
+        {/* Main Product Card (Pattern matches reference design 3rd screen) */}
+        <div className='mx-auto bg-surface border border-line shadow-sm rounded-3xl p-5 md:p-8 md:flex gap-8'>
           {/* Left - Product Images */}
-          <div className='md:w-1/2 border border-[#f5f4f4] rounded shadow-2xl p-3'>
-            <div className='relative'>
+          <div className='md:w-1/2 rounded-3xl bg-card-pink/60 border border-line p-4'>
+            <div className='relative overflow-hidden rounded-2xl bg-surface'>
               {mainPhoto ? (
                 <img
                   src={mainPhoto}
                   width={500}
                   height={500}
                   alt={product.title || 'Cosmetik Point product image'}
-                  className='mx-auto rounded object-cover max-h-[450px] w-full'
+                  className='mx-auto rounded-2xl object-cover max-h-[440px] w-full'
                 />
               ) : (
-                <div className='flex h-[380px] items-center justify-center rounded bg-gray-100 text-gray-400'>
+                <div className='flex h-[380px] items-center justify-center rounded-2xl bg-surface-muted text-ink-muted'>
                   No Image Available
                 </div>
               )}
 
-              <div className='absolute top-2 left-2 bg-purple-700 text-white text-xs px-2 py-1 rounded capitalize font-medium'>
+              <div className='absolute top-3 left-3 rounded-full bg-brand text-brand-foreground text-xs px-3 py-1 font-semibold shadow-xs'>
                 100% Authentic Beauty Product
               </div>
-              <hr className='my-2' />
             </div>
 
             {/* Thumbnail Images */}
             {galleryImages.length > 0 && (
-              <div className='flex flex-wrap gap-2 px-2'>
+              <div className='flex flex-wrap gap-2.5 pt-4'>
                 {galleryImages.map((src, idx) => (
                   <button
                     key={`${src}-${idx}`}
                     type='button'
                     onClick={() => setActiveImage(src)}
-                    className={`rounded-lg border-2 p-0.5 transition ${
+                    className={`rounded-2xl border-2 p-0.5 transition cursor-pointer ${
                       mainPhoto === src
-                        ? 'border-purple-600'
-                        : 'border-gray-300 hover:border-purple-400'
+                        ? 'border-brand shadow-xs'
+                        : 'border-line hover:border-brand/50'
                     }`}
                   >
                     <img
@@ -317,7 +327,7 @@ export default function FindSingleProduct(): ReactElement {
                       alt={`${product.title || 'Product'} thumbnail ${idx + 1}`}
                       width={60}
                       height={60}
-                      className='rounded object-cover w-[60px] h-[60px]'
+                      className='rounded-xl object-cover w-[60px] h-[60px]'
                     />
                   </button>
                 ))}
@@ -326,140 +336,156 @@ export default function FindSingleProduct(): ReactElement {
           </div>
 
           {/* Right - Product Details */}
-          <div className='mt-10 sm:mt-1 md:w-1/2 md:pl-6'>
-            <h1 className='text-xl font-semibold capitalize'>{product.title}</h1>
-
-            {/* Ratings */}
-            <div className='flex items-center space-x-1 mt-2 text-yellow-500'>
-              {'★★★★★'.split('').map((star, i) => (
-                <span key={i}>{star}</span>
-              ))}
-              <span className='text-gray-600 text-sm ml-2'>
-                {ratingCount} Ratings | Verified Authentic
+          <div className='mt-8 md:mt-0 md:w-1/2 flex flex-col justify-between'>
+            <div>
+              {/* Brand Badge */}
+              <span className='inline-block rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand mb-2'>
+                {product.brand || 'Cosmetik Point'}
               </span>
-            </div>
 
-            {/* Price */}
-            <div className='mt-3 flex items-center flex-wrap gap-2'>
-              <span className='text-2xl font-bold text-orange-500'>
-                ৳ {finalPrice.toLocaleString()}
-              </span>
-              {discountPercent > 0 && basePrice > finalPrice && (
-                <>
-                  <span className='text-gray-500 line-through'>৳ {basePrice.toLocaleString()}</span>
-                  <span className='bg-orange-100 text-orange-600 px-2 py-1 text-xs rounded font-medium'>
-                    -{discountPercent}%
-                  </span>
-                </>
-              )}
-            </div>
+              <h1 className='font-display text-2xl sm:text-3xl font-bold text-ink capitalize'>
+                {product.title}
+              </h1>
 
-            {/* Subtotal & Availability */}
-            <div className='flex items-center gap-5 mt-2'>
-              <div className='bg-orange-100 text-orange-700 px-3 py-1 inline-block rounded text-lg font-medium'>
-                Total: ৳ {(finalPrice * quantity).toLocaleString()}
-              </div>
-              <div className='flex items-center gap-1 text-lg'>
-                <TiInputChecked className='text-green-800' />
-                <span className='text-green-700'>{stockStatus}</span>
-              </div>
-            </div>
-
-            {/* Shade / Color Family Selection */}
-            <div className='mt-4'>
-              <h3 className='text-md font-semibold'>Shade / Color: {selectedShade}</h3>
-              <div className='flex space-x-2 mt-2'>
-                {DEFAULT_SHADES.map((shade) => (
-                  <button
-                    key={shade.label}
-                    type='button'
-                    aria-label={`Select shade ${shade.label}`}
-                    title={shade.label}
-                    onClick={() => setSelectedShade(shade.label)}
-                    style={{ backgroundColor: shade.hex }}
-                    className={`w-9 h-9 rounded-full border-2 transition ${
-                      selectedShade === shade.label
-                        ? 'border-purple-600 ring-2 ring-purple-300 scale-105'
-                        : 'border-gray-300'
-                    }`}
-                  />
+              {/* Ratings */}
+              <div className='flex items-center space-x-1 mt-2 text-amber-400'>
+                {'★★★★★'.split('').map((star, i) => (
+                  <span key={i}>{star}</span>
                 ))}
+                <span className='text-ink-muted text-sm ml-2'>
+                  {ratingCount} Ratings &bull; Verified Authentic
+                </span>
+              </div>
+
+              {/* Price */}
+              <div className='mt-4 flex items-center flex-wrap gap-2.5'>
+                <span className='text-3xl font-bold text-brand'>
+                  ৳ {finalPrice.toLocaleString()}
+                </span>
+                {discountPercent > 0 && basePrice > finalPrice && (
+                  <>
+                    <span className='text-ink-muted line-through text-base'>
+                      ৳ {basePrice.toLocaleString()}
+                    </span>
+                    <span className='bg-brand-soft text-brand px-3 py-1 text-xs rounded-full font-semibold'>
+                      -{discountPercent}% Off
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Subtotal & Availability */}
+              <div className='flex flex-wrap items-center gap-4 mt-3'>
+                <div className='bg-brand-soft text-ink px-4 py-1.5 rounded-full text-sm font-semibold border border-line'>
+                  Total: ৳ {(finalPrice * quantity).toLocaleString()}
+                </div>
+                <div className='flex items-center gap-1 text-sm font-medium text-emerald-700'>
+                  <TiInputChecked className='text-lg text-emerald-600' />
+                  <span>{stockStatus}</span>
+                </div>
+              </div>
+
+              {/* Shade / Color Family Selection */}
+              <div className='mt-5'>
+                <h3 className='text-sm font-semibold text-ink'>
+                  Shade / Color: <span className='text-brand'>{selectedShade}</span>
+                </h3>
+                <div className='flex space-x-2.5 mt-2'>
+                  {DEFAULT_SHADES.map((shade) => (
+                    <button
+                      key={shade.label}
+                      type='button'
+                      aria-label={`Select shade ${shade.label}`}
+                      title={shade.label}
+                      onClick={() => setSelectedShade(shade.label)}
+                      style={{ backgroundColor: shade.hex }}
+                      className={`w-9 h-9 rounded-full border-2 transition cursor-pointer ${
+                        selectedShade === shade.label
+                          ? 'border-brand ring-2 ring-brand/30 scale-105'
+                          : 'border-line'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Volume / Pack Size Selection */}
+              <div className='mt-5'>
+                <h3 className='text-sm font-semibold text-ink'>Size / Volume</h3>
+                <div className='flex flex-wrap gap-2 mt-2'>
+                  {DEFAULT_VOLUMES.map((volume) => (
+                    <button
+                      key={volume}
+                      type='button'
+                      onClick={() => setSelectedVolume(volume)}
+                      className={`px-4 py-1.5 rounded-full border text-sm font-medium transition cursor-pointer ${
+                        selectedVolume === volume
+                          ? 'bg-brand text-brand-foreground border-brand shadow-xs'
+                          : 'bg-surface text-ink-muted border-line hover:border-brand hover:text-brand'
+                      }`}
+                    >
+                      {volume}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* Volume / Pack Size Selection */}
-            <div className='mt-4'>
-              <h3 className='text-md font-semibold'>Size / Volume</h3>
-              <div className='flex space-x-2 mt-2'>
-                {DEFAULT_VOLUMES.map((volume) => (
-                  <button
-                    key={volume}
-                    type='button'
-                    onClick={() => setSelectedVolume(volume)}
-                    className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition ${
-                      selectedVolume === volume
-                        ? 'bg-purple-600 text-white border-purple-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-purple-500'
-                    }`}
-                  >
-                    {volume}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Quantity */}
-            <div className='mt-4'>
-              <h3 className='text-md font-semibold'>Quantity</h3>
-              <div className='flex items-center space-x-4 mt-2'>
+            {/* Quantity Stepper & Action Buttons (Matches Reference Photo Bottom Bar) */}
+            <div className='mt-7 pt-5 border-t border-line flex flex-col sm:flex-row items-stretch sm:items-center gap-3'>
+              <div className='inline-flex items-center justify-between rounded-full border border-line bg-surface-muted px-3 py-1.5 gap-4'>
                 <button
                   type='button'
+                  aria-label='Decrease quantity'
                   onClick={() => setQuantity((q) => (q > 1 ? q - 1 : 1))}
-                  className='bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded font-semibold'
+                  className='w-7 h-7 rounded-full bg-surface border border-line text-ink hover:border-brand hover:text-brand flex items-center justify-center font-bold transition cursor-pointer'
                 >
                   -
                 </button>
-                <span className='text-lg font-semibold'>{quantity}</span>
+                <span className='text-base font-semibold min-w-[20px] text-center'>{quantity}</span>
                 <button
                   type='button'
+                  aria-label='Increase quantity'
                   onClick={() => setQuantity((q) => q + 1)}
-                  className='bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded font-semibold'
+                  className='w-7 h-7 rounded-full bg-surface border border-line text-ink hover:border-brand hover:text-brand flex items-center justify-center font-bold transition cursor-pointer'
                 >
                   +
                 </button>
               </div>
-            </div>
 
-            {/* Action Buttons */}
-            <div className='mt-6 flex space-x-4'>
-              <Link
-                href='/product/payment'
-                className='w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded text-center font-semibold transition'
-              >
-                Buy Now
-              </Link>
               <button
                 type='button'
-                className='w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded font-semibold transition'
+                className='flex-1 rounded-full bg-brand hover:bg-brand-hover text-brand-foreground py-3 px-6 font-semibold shadow-sm transition cursor-pointer'
               >
                 Add to Cart
               </button>
+
+              <Link
+                href='/product/payment'
+                className='flex-1 rounded-full border border-brand bg-brand-soft hover:bg-brand text-brand hover:text-brand-foreground py-3 px-6 text-center font-semibold transition'
+              >
+                Buy Now
+              </Link>
             </div>
           </div>
         </div>
 
         {/* Specifications & Delivery Section */}
-        <div className='py-10 px-2'>
-          <div className='sm:flex flex-row items-start gap-5'>
-            <div className='w-full h-auto sm:border-r sm:pr-5'>
+        <div className='py-10'>
+          <div className='lg:flex flex-row items-start gap-6'>
+            {/* Left - Specs, Bullet Points & Description */}
+            <div className='w-full space-y-8'>
               {/* Specifications */}
-              <div className='mb-12'>
-                <h2 className='text-2xl font-bold mb-4'>Specifications</h2>
-                <dl className='grid grid-cols-2 md:grid-cols-3 gap-4 border rounded-lg p-4'>
+              <div className='rounded-3xl border border-line bg-surface p-6'>
+                <h2 className='font-display text-2xl font-bold text-ink mb-4'>Specifications</h2>
+                <dl className='grid grid-cols-2 md:grid-cols-3 gap-4'>
                   {specRows.map(([label, value]) => (
-                    <div key={label} className='border-b pb-2'>
-                      <dt className='text-gray-600 text-sm'>{label}</dt>
-                      <dd className='font-medium'>{value}</dd>
+                    <div
+                      key={label}
+                      className='rounded-2xl bg-surface-muted border border-line p-3'
+                    >
+                      <dt className='text-ink-muted text-xs uppercase tracking-wide'>{label}</dt>
+                      <dd className='font-semibold text-ink mt-1 text-sm'>{value}</dd>
                     </div>
                   ))}
                 </dl>
@@ -467,13 +493,13 @@ export default function FindSingleProduct(): ReactElement {
 
               {/* Product Features */}
               {featureList.length > 0 && (
-                <div className='mb-12'>
-                  <h2 className='text-2xl font-bold mb-4'>About This Item</h2>
+                <div className='rounded-3xl border border-line bg-card-mint/50 p-6'>
+                  <h2 className='font-display text-2xl font-bold text-ink mb-4'>About This Item</h2>
                   <ul className='space-y-3'>
                     {featureList.map((feature, index) => (
-                      <li key={index} className='flex items-start gap-2'>
-                        <GoDotFill className='mt-1.5 shrink-0 text-purple-600' />
-                        <p className='w-full'>{feature}</p>
+                      <li key={index} className='flex items-start gap-2.5'>
+                        <GoDotFill className='mt-1.5 shrink-0 text-brand' />
+                        <p className='w-full text-ink-muted'>{feature}</p>
                       </li>
                     ))}
                   </ul>
@@ -481,87 +507,87 @@ export default function FindSingleProduct(): ReactElement {
               )}
 
               {/* Description */}
-              <div className='border-t pt-8'>
-                <h3 className='text-lg font-semibold mb-4'>Product Description</h3>
-                <p className='text-gray-700 leading-relaxed whitespace-pre-line'>
+              <div className='rounded-3xl border border-line bg-surface p-6'>
+                <h3 className='font-display text-xl font-semibold text-ink mb-3'>Description</h3>
+                <p className='text-ink-muted leading-relaxed whitespace-pre-line text-sm sm:text-base'>
                   {product.description || 'No description available.'}
                 </p>
               </div>
             </div>
 
             {/* Right Sidebar - Delivery */}
-            <div className='w-full sm:w-[35%] h-auto shrink-0'>
-              <h2 className='text-2xl font-bold mb-3 sm:mt-0 mt-5'>Delivery</h2>
+            <aside className='w-full lg:w-[36%] shrink-0 mt-6 lg:mt-0 rounded-3xl border border-line bg-surface p-6 shadow-xs'>
+              <h2 className='font-display text-2xl font-bold text-ink mb-3'>Delivery</h2>
 
-              <div>
-                {/* Price Summary */}
-                <div className='mb-6'>
-                  <div className='flex items-baseline gap-2'>
-                    <span className='text-3xl font-bold'>৳ {finalPrice.toLocaleString()}</span>
-                    {discountPercent > 0 && basePrice > finalPrice && (
-                      <>
-                        <span className='text-gray-500 line-through'>
-                          ৳ {basePrice.toLocaleString()}
-                        </span>
-                        <span className='text-red-600 font-medium'>{discountPercent}% off</span>
-                      </>
-                    )}
-                  </div>
-                  <p className='text-gray-600 mt-1 text-sm'>
-                    Fast delivery inside Dhaka city & all over Bangladesh (৳60 to ৳150). Cash on
-                    Delivery available.
-                  </p>
-                </div>
-
-                {/* Delivery Info */}
-                <div className='bg-blue-50 p-4 rounded-lg mb-6'>
-                  <p className='font-medium capitalize text-slate-800 mb-2'>If you order today</p>
-                  {deliveryEstimate && (
-                    <div className='flex items-center gap-2 mb-2'>
-                      <BsTruck className='w-5 h-5 text-blue-600 shrink-0' />
-                      <span className='text-[15px] font-semibold capitalize'>
-                        Delivery by: {deliveryEstimate}
+              {/* Price Summary */}
+              <div className='mb-5'>
+                <div className='flex items-baseline gap-2'>
+                  <span className='text-3xl font-bold text-brand'>
+                    ৳ {finalPrice.toLocaleString()}
+                  </span>
+                  {discountPercent > 0 && basePrice > finalPrice && (
+                    <>
+                      <span className='text-ink-muted line-through text-sm'>
+                        ৳ {basePrice.toLocaleString()}
                       </span>
-                    </div>
+                      <span className='text-brand font-semibold text-sm'>
+                        {discountPercent}% off
+                      </span>
+                    </>
                   )}
+                </div>
+                <p className='text-ink-muted mt-1 text-sm'>
+                  Fast delivery inside Dhaka city &amp; all over Bangladesh (৳60 to ৳150). Cash on
+                  Delivery available.
+                </p>
+              </div>
 
+              {/* Delivery Info Card */}
+              <div className='bg-brand-soft border border-line p-4 rounded-2xl mb-5'>
+                <p className='font-semibold text-ink mb-2 text-sm'>If you order today</p>
+                {deliveryEstimate && (
                   <div className='flex items-center gap-2 mb-2'>
-                    <CiLocationOn className='w-5 h-5 text-blue-700 shrink-0' />
-                    <span className='text-base font-medium capitalize'>
-                      Delivery across Bangladesh
+                    <BsTruck className='w-5 h-5 text-brand shrink-0' />
+                    <span className='text-sm font-semibold text-ink'>
+                      Delivery by: {deliveryEstimate}
                     </span>
                   </div>
+                )}
 
-                  {stockLeft > 0 && stockLeft <= 10 && (
-                    <p className='text-red-600 text-sm mt-2'>
-                      Only {stockLeft} left in stock — order soon.
-                    </p>
-                  )}
+                <div className='flex items-center gap-2 mb-2'>
+                  <CiLocationOn className='w-5 h-5 text-brand shrink-0' />
+                  <span className='text-sm font-medium text-ink'>Delivery across Bangladesh</span>
                 </div>
 
-                {/* Payment Security */}
-                <div className='flex items-center gap-2 text-sm text-gray-600 mb-5'>
-                  <BsShieldCheck className='w-5 h-5 text-green-600 shrink-0' />
-                  <span>100% Secure Payment & Authentic Products</span>
-                </div>
-
-                {/* Action Buttons */}
-                <div className='space-y-4 mb-8'>
-                  <button
-                    type='button'
-                    className='w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700 transition font-semibold'
-                  >
-                    Add to Cart
-                  </button>
-                  <Link
-                    href='/product/payment'
-                    className='w-full bg-yellow-400 text-black py-3 rounded hover:bg-yellow-500 transition inline-block text-center font-semibold'
-                  >
-                    Buy Now
-                  </Link>
-                </div>
+                {stockLeft > 0 && stockLeft <= 10 && (
+                  <p className='text-brand text-xs font-semibold mt-2'>
+                    Only {stockLeft} left in stock — order soon.
+                  </p>
+                )}
               </div>
-            </div>
+
+              {/* Payment Security */}
+              <div className='flex items-center gap-2 text-xs text-ink-muted mb-5'>
+                <BsShieldCheck className='w-5 h-5 text-emerald-600 shrink-0' />
+                <span>100% Secure Payment &amp; Authentic Products</span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className='space-y-3'>
+                <button
+                  type='button'
+                  className='w-full rounded-full bg-brand hover:bg-brand-hover text-brand-foreground py-3 transition font-semibold cursor-pointer'
+                >
+                  Add to Cart
+                </button>
+                <Link
+                  href='/product/payment'
+                  className='w-full rounded-full border border-brand bg-brand-soft hover:bg-brand text-brand hover:text-brand-foreground py-3 transition inline-block text-center font-semibold'
+                >
+                  Buy Now
+                </Link>
+              </div>
+            </aside>
           </div>
         </div>
       </div>
@@ -570,5 +596,19 @@ export default function FindSingleProduct(): ReactElement {
       <Review />
       <Commitment />
     </section>
+  );
+}
+
+// ============================================================================
+// Exported Page Component
+// Wrapped in Suspense because Next.js 16 (cacheComponents: true) requires it
+// when using `useParams()` / `usePathname()` on dynamic `[id]` routes.
+// ============================================================================
+
+export default function FindSingleProduct(): ReactElement {
+  return (
+    <Suspense fallback={<Loading />}>
+      <FindSingleProductContent />
+    </Suspense>
   );
 }
