@@ -1,22 +1,153 @@
 @import 'tailwindcss';
 @plugin "daisyui";
 
-/* Connect Next.js Geist fonts from src/app/layout.tsx to Tailwind v4 */
-@theme inline {
-  --font-sans: var(--font-geist-sans), Arial, Helvetica, sans-serif;
-  --font-mono: var(--font-geist-mono), monospace;
-}
+/* ============================================================================
+ * 1. Default Theme: "rose-blossom" (Matches your reference design image)
+ * ============================================================================ */
+:root,
+[data-cp-theme='rose-blossom'] {
+  --theme-primary: #ec6c86;
+  --theme-primary-hover: #d94e6b;
+  --theme-primary-soft: #fdeef2;
+  --theme-primary-foreground: #ffffff;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --theme-surface: #ffffff;
+  --theme-surface-muted: #faf8f9;
+  --theme-border: #f1e4e8;
+
+  --theme-text: #1f1f24;
+  --theme-text-muted: #6e6b73;
+
+  /* Pastel Category & Product Card Backgrounds (Photo Pattern) */
+  --theme-card-pink: #fff0f4;
+  --theme-card-mint: #eaf8e6;
+  --theme-card-sky: #e6f4fe;
+  --theme-card-lavender: #f2ecfe;
+  --theme-card-cream: #fff8dc;
+
+  /* Typography */
+  --theme-font-display: var(--font-playfair), Georgia, serif;
+  --theme-font-body: var(--font-jakarta), Arial, sans-serif;
+
+  --background: var(--theme-surface);
+  --foreground: var(--theme-text);
   color-scheme: light;
 }
 
+/* ============================================================================
+ * 2. Alternate Theme: "luxury-gold" (Warm Champagne & Editorial Serif)
+ * ============================================================================ */
+[data-cp-theme='luxury-gold'] {
+  --theme-primary: #c58b2b;
+  --theme-primary-hover: #a8721b;
+  --theme-primary-soft: #fbf3e4;
+  --theme-primary-foreground: #ffffff;
+
+  --theme-surface: #fffdf9;
+  --theme-surface-muted: #f9f5ee;
+  --theme-border: #ede2cf;
+
+  --theme-text: #221d15;
+  --theme-text-muted: #706658;
+
+  --theme-card-pink: #fdf1e6;
+  --theme-card-mint: #eef5ea;
+  --theme-card-sky: #ebf3f7;
+  --theme-card-lavender: #f4eef8;
+  --theme-card-cream: #fcf5dc;
+
+  --theme-font-display: var(--font-playfair), Georgia, serif;
+  --theme-font-body: var(--font-poppins), Arial, sans-serif;
+}
+
+/* ============================================================================
+ * 3. Alternate Theme: "botanical-mint" (Fresh Organic Skincare)
+ * ============================================================================ */
+[data-cp-theme='botanical-mint'] {
+  --theme-primary: #2e8b57;
+  --theme-primary-hover: #236e44;
+  --theme-primary-soft: #e7f6ed;
+  --theme-primary-foreground: #ffffff;
+
+  --theme-surface: #ffffff;
+  --theme-surface-muted: #f6faf8;
+  --theme-border: #dcece2;
+
+  --theme-text: #18241e;
+  --theme-text-muted: #5a6d62;
+
+  --theme-card-pink: #f4f9ef;
+  --theme-card-mint: #e3f6ea;
+  --theme-card-sky: #e6f5f9;
+  --theme-card-lavender: #eef3fb;
+  --theme-card-cream: #f8f7e4;
+
+  --theme-font-display: var(--font-poppins), sans-serif;
+  --theme-font-body: var(--font-jakarta), Arial, sans-serif;
+}
+
+/* ============================================================================
+ * 4. Alternate Theme: "midnight-plum" (Glam Evening Berry)
+ * ============================================================================ */
+[data-cp-theme='midnight-plum'] {
+  --theme-primary: #8b3a75;
+  --theme-primary-hover: #702a5d;
+  --theme-primary-soft: #f7eaf3;
+  --theme-primary-foreground: #ffffff;
+
+  --theme-surface: #ffffff;
+  --theme-surface-muted: #faf7fa;
+  --theme-border: #ebdce7;
+
+  --theme-text: #241923;
+  --theme-text-muted: #6c5b6a;
+
+  --theme-card-pink: #faedf6;
+  --theme-card-mint: #eef7f1;
+  --theme-card-sky: #edf3fc;
+  --theme-card-lavender: #f2e8fc;
+  --theme-card-cream: #fbf5e6;
+
+  --theme-font-display: var(--font-playfair), Georgia, serif;
+  --theme-font-body: var(--font-jakarta), Arial, sans-serif;
+}
+
+/* ============================================================================
+ * Tailwind CSS v4 Theme Mapping
+ * Gives you classes like: `bg-brand`, `text-brand`, `bg-brand-soft`,
+ * `bg-card-pink`, `bg-card-mint`, `font-display`, `font-sans`, `text-ink`
+ * ============================================================================ */
+@theme inline {
+  --color-brand: var(--theme-primary);
+  --color-brand-hover: var(--theme-primary-hover);
+  --color-brand-soft: var(--theme-primary-soft);
+  --color-brand-foreground: var(--theme-primary-foreground);
+
+  --color-surface: var(--theme-surface);
+  --color-surface-muted: var(--theme-surface-muted);
+  --color-line: var(--theme-border);
+
+  --color-ink: var(--theme-text);
+  --color-ink-muted: var(--theme-text-muted);
+
+  --color-card-pink: var(--theme-card-pink);
+  --color-card-mint: var(--theme-card-mint);
+  --color-card-sky: var(--theme-card-sky);
+  --color-card-lavender: var(--theme-card-lavender);
+  --color-card-cream: var(--theme-card-cream);
+
+  --font-display: var(--theme-font-display);
+  --font-sans: var(--theme-font-body);
+  --font-mono: var(--font-geist-mono), monospace;
+}
+
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
+  background-color: var(--theme-surface);
+  color: var(--theme-text);
+  font-family: var(--theme-font-body);
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease;
 }
 
 /* Centered card helper used by src/app/error.tsx */

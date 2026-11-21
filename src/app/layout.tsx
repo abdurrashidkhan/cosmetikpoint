@@ -1,17 +1,31 @@
 import Footer from '@/Components/Footer/Footer';
 import Navbar from '@/Components/Navbar/Navbar';
+import { ThemeProvider } from '@/context/ThemeContext/ThemeContext';
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist_Mono, Playfair_Display, Plus_Jakarta_Sans, Poppins } from 'next/font/google';
 import type { ReactElement, ReactNode } from 'react';
 import './globals.css';
 
 // ============================================================================
-// Fonts
+// Dynamic Theme Fonts (Switched automatically via CSS variables)
 // ============================================================================
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const playfair = Playfair_Display({
+  variable: '--font-playfair',
   subsets: ['latin'],
+  weight: ['500', '600', '700'],
+});
+
+const jakarta = Plus_Jakarta_Sans({
+  variable: '--font-jakarta',
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+});
+
+const poppins = Poppins({
+  variable: '--font-poppins',
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
 });
 
 const geistMono = Geist_Mono({
@@ -28,12 +42,12 @@ export const metadata: Metadata = {
   publisher: 'Cosmetik Point',
   title: {
     default: 'Cosmetik Point | Authentic Cosmetics & Skincare Shop in Bangladesh',
-    template: '%s | Cosmetik Point',
+    template: '%s | CosmetikPoint',
   },
   description:
     'Shop 100% authentic cosmetics, skincare, makeup, haircare, and fragrances at Cosmetik Point. Enjoy fast delivery across Bangladesh, cash on delivery, and secure online payments.',
   keywords: [
-    'Cosmetik Point',
+    'CosmetikPoint',
     'Cosmetik Point',
     'cosmetics shop in Bangladesh',
     'online beauty store Bangladesh',
@@ -63,14 +77,16 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: Readonly<RootLayoutProps>): ReactElement {
   return (
-    <html lang='en' suppressHydrationWarning>
+    <html lang='en' data-cp-theme='rose-blossom' suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${playfair.variable} ${jakarta.variable} ${poppins.variable} ${geistMono.variable} antialiased bg-surface text-ink`}
       >
-        <Navbar />
-        {children}
-        <Footer />
+        <ThemeProvider>
+          <Navbar />
+          {children}
+          <Footer />
+        </ThemeProvider>
       </body>
     </html>
   );
