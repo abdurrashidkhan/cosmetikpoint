@@ -2,7 +2,6 @@
 
 import type { ReactNode } from 'react';
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { HiChevronLeft, HiMenuAlt2 } from 'react-icons/hi';
 
 // ============================================================================
 // Types & Helpers
@@ -19,16 +18,14 @@ const emptySubscribe = (): (() => void) => () => {};
 // Component
 // ============================================================================
 
-export function DashBoard({
-  children,
-}: Readonly<DashBoardProps>): ReactNode {
+export function DashBoard({ children }: Readonly<DashBoardProps>): ReactNode {
   const [isOpen, setIsOpen] = useState<boolean>(true);
 
   // Detect client render without triggering React 19 `set-state-in-effect`
   const isClient = useSyncExternalStore(
     emptySubscribe,
     () => true,
-    () => false
+    () => false,
   );
 
   // Automatically collapse/expand state based on viewport width
@@ -56,9 +53,8 @@ export function DashBoard({
       {/* Main Content Area */}
       <div className='flex-1 flex flex-col min-w-0 overflow-hidden'>
         {/* Top Sub-Header Bar */}
-        <header className='h-20 bg-white border-b border-gray-100 flex items-center justify-between px-8 sticky top-0 z-30'>
-          {/* Toggle Button (single onClick handler on button only) */}
-          <button
+        {/* <header className='h-20 bg-white border-b border-gray-100 flex items-center justify-between px-8 sticky top-0 z-30'>
+s          <button
             type='button'
             onClick={() => setIsOpen((prev) => !prev)}
             aria-expanded={isOpen}
@@ -68,14 +64,13 @@ export function DashBoard({
             {isOpen ? <HiChevronLeft size={24} /> : <HiMenuAlt2 size={24} />}
           </button>
 
-          {/* Live Server Status Badge */}
           <div className='flex items-center gap-2'>
             <span className='h-2 w-2 rounded-full bg-emerald-500 animate-pulse' />
             <span className='text-[10px] font-bold text-gray-400 uppercase tracking-widest'>
               Server: Live
             </span>
           </div>
-        </header>
+        </header> */}
 
         {/* Main Body (uses <div> because DashboardLayout already provides <main>) */}
         <div className='p-6 md:p-10 overflow-y-auto'>
