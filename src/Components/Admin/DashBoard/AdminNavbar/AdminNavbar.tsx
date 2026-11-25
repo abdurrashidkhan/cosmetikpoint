@@ -8,13 +8,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import {
-  FiBell,
-  FiChevronDown,
-  FiHelpCircle,
-  FiMenu,
-  FiSearch,
-} from 'react-icons/fi';
+import { FiBell, FiChevronDown, FiHelpCircle, FiMenu, FiSearch } from 'react-icons/fi';
 
 // ============================================================================
 // Types & Constants
@@ -42,10 +36,7 @@ export function AdminNavbar({ onMenuClick }: AdminNavbarProps): ReactElement {
   // Close profile dropdown when clicking outside or pressing Escape
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent): void => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowProfile(false);
       }
     };
@@ -83,13 +74,13 @@ export function AdminNavbar({ onMenuClick }: AdminNavbarProps): ReactElement {
 
   return (
     <div className='w-full flex items-center justify-between'>
-      {/* Left side: Mobile menu button & Search box */}
+      {/* Left side: Sidebar menu toggle & Search box */}
       <div className='flex items-center gap-4 flex-1'>
         <button
           type='button'
-          onClick={onMenuClick}
+          onClick={() => onMenuClick?.()}
           aria-label='Toggle sidebar menu'
-          className='p-2 md:hidden hover:bg-gray-100 rounded-lg cursor-pointer'
+          className='p-2 hover:bg-gray-100 rounded-lg cursor-pointer shrink-0'
         >
           <FiMenu className='text-xl text-gray-600' />
         </button>
@@ -102,14 +93,13 @@ export function AdminNavbar({ onMenuClick }: AdminNavbarProps): ReactElement {
             type='search'
             aria-label='Search analytics and orders'
             placeholder='Search analytics, orders...'
-            className='w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all'
+            className='w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all'
           />
         </div>
       </div>
 
       {/* Right side: Support, Notifications & User Profile */}
       <div className='flex items-center gap-2 md:gap-5'>
-        {/* Support Link */}
         <Link
           href='/support'
           className='hidden lg:flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors'
@@ -118,14 +108,13 @@ export function AdminNavbar({ onMenuClick }: AdminNavbarProps): ReactElement {
           <span>Need Help?</span>
         </Link>
 
-        {/* Notifications Button */}
         <button
           type='button'
           aria-label='Notifications'
           className='relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-all cursor-pointer'
         >
           <FiBell className='text-xl' />
-          <span className='absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full border-2 border-white' />
+          <span className='absolute top-1.5 right-1.5 h-2 w-2 bg-brand rounded-full border-2 border-white' />
         </button>
 
         <div className='h-8 w-px bg-gray-200 mx-2 hidden sm:block' />
@@ -140,15 +129,13 @@ export function AdminNavbar({ onMenuClick }: AdminNavbarProps): ReactElement {
             className='flex items-center gap-3 p-1 hover:bg-gray-50 rounded-xl transition-all cursor-pointer'
           >
             <div className='text-right hidden sm:block'>
-              <p className='text-sm font-semibold text-gray-800 leading-tight'>
-                {displayName}
-              </p>
-              <p className='text-[11px] text-indigo-600 font-medium uppercase tracking-tighter'>
+              <p className='text-sm font-semibold text-gray-800 leading-tight'>{displayName}</p>
+              <p className='text-[11px] text-brand font-medium uppercase tracking-tighter'>
                 Super Admin
               </p>
             </div>
 
-            <div className='relative h-10 w-10 rounded-xl overflow-hidden border-2 border-indigo-100'>
+            <div className='relative h-10 w-10 rounded-xl overflow-hidden border-2 border-brand/20'>
               <Image
                 src={avatarSrc}
                 alt={`${displayName} profile`}
@@ -159,9 +146,7 @@ export function AdminNavbar({ onMenuClick }: AdminNavbarProps): ReactElement {
             </div>
 
             <FiChevronDown
-              className={`text-gray-400 transition-transform ${
-                showProfile ? 'rotate-180' : ''
-              }`}
+              className={`text-gray-400 transition-transform ${showProfile ? 'rotate-180' : ''}`}
             />
           </button>
 
@@ -169,7 +154,7 @@ export function AdminNavbar({ onMenuClick }: AdminNavbarProps): ReactElement {
           {showProfile && (
             <div
               role='menu'
-              className='absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2'
+              className='absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-xl py-2 z-50'
             >
               <div className='px-4 py-2 border-b border-gray-50 mb-1'>
                 <p className='text-xs text-gray-400'>Manage Account</p>
@@ -179,18 +164,18 @@ export function AdminNavbar({ onMenuClick }: AdminNavbarProps): ReactElement {
                 href='/authentication/dashboard/profile'
                 role='menuitem'
                 onClick={() => setShowProfile(false)}
-                className='block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors'
+                className='block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-brand-soft hover:text-brand transition-colors'
               >
                 Profile Settings
               </Link>
 
               <Link
-                href='/authentication/dashboard/security'
+                href='/authentication/dashboard/settings'
                 role='menuitem'
                 onClick={() => setShowProfile(false)}
-                className='block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors'
+                className='block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-brand-soft hover:text-brand transition-colors'
               >
-                Security
+                Settings
               </Link>
 
               <hr className='my-1 border-gray-100' />
