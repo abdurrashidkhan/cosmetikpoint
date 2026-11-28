@@ -2,7 +2,7 @@
 @plugin "daisyui";
 
 /* ============================================================================
- * 1. Default Theme: "rose-blossom" (Matches your reference design image)
+ * 1. Default Theme: "rose-blossom" (Based on your uploaded pink gradient photo)
  * ============================================================================ */
 :root,
 [data-cp-theme='rose-blossom'] {
@@ -10,6 +10,8 @@
   --theme-primary-hover: #d94e6b;
   --theme-primary-soft: #fdeef2;
   --theme-primary-foreground: #ffffff;
+  --theme-gradient: linear-gradient(135deg, #f9c5d1 0%, #ec6c86 55%, #d94e6b 100%);
+  --theme-gradient-soft: linear-gradient(180deg, #fff5f8 0%, #fdeef2 100%);
 
   --theme-surface: #ffffff;
   --theme-surface-muted: #faf8f9;
@@ -18,7 +20,7 @@
   --theme-text: #1f1f24;
   --theme-text-muted: #6e6b73;
 
-  /* Pastel Category & Product Card Backgrounds (Photo Pattern) */
+  /* Pastel Category & Product Card Backgrounds */
   --theme-card-pink: #fff0f4;
   --theme-card-mint: #eaf8e6;
   --theme-card-sky: #e6f4fe;
@@ -35,13 +37,15 @@
 }
 
 /* ============================================================================
- * 2. Alternate Theme: "luxury-gold" (Warm Champagne & Editorial Serif)
+ * 2. Alternate Theme: "luxury-gold" (Champagne & Gold Gradient)
  * ============================================================================ */
 [data-cp-theme='luxury-gold'] {
   --theme-primary: #c58b2b;
   --theme-primary-hover: #a8721b;
   --theme-primary-soft: #fbf3e4;
   --theme-primary-foreground: #ffffff;
+  --theme-gradient: linear-gradient(135deg, #f3dec0 0%, #c58b2b 58%, #9e6a14 100%);
+  --theme-gradient-soft: linear-gradient(180deg, #fffaf2 0%, #fbf3e4 100%);
 
   --theme-surface: #fffdf9;
   --theme-surface-muted: #f9f5ee;
@@ -61,13 +65,15 @@
 }
 
 /* ============================================================================
- * 3. Alternate Theme: "botanical-mint" (Fresh Organic Skincare)
+ * 3. Alternate Theme: "botanical-mint" (Organic Skincare Gradient)
  * ============================================================================ */
 [data-cp-theme='botanical-mint'] {
   --theme-primary: #2e8b57;
   --theme-primary-hover: #236e44;
   --theme-primary-soft: #e7f6ed;
   --theme-primary-foreground: #ffffff;
+  --theme-gradient: linear-gradient(135deg, #a8e6c1 0%, #2e8b57 58%, #1d643d 100%);
+  --theme-gradient-soft: linear-gradient(180deg, #f5fbf7 0%, #e7f6ed 100%);
 
   --theme-surface: #ffffff;
   --theme-surface-muted: #f6faf8;
@@ -87,13 +93,15 @@
 }
 
 /* ============================================================================
- * 4. Alternate Theme: "midnight-plum" (Glam Evening Berry)
+ * 4. Alternate Theme: "midnight-plum" (Velvet Plum Gradient)
  * ============================================================================ */
 [data-cp-theme='midnight-plum'] {
   --theme-primary: #8b3a75;
   --theme-primary-hover: #702a5d;
   --theme-primary-soft: #f7eaf3;
   --theme-primary-foreground: #ffffff;
+  --theme-gradient: linear-gradient(135deg, #dfb3d3 0%, #8b3a75 58%, #612050 100%);
+  --theme-gradient-soft: linear-gradient(180deg, #fcf6fa 0%, #f7eaf3 100%);
 
   --theme-surface: #ffffff;
   --theme-surface-muted: #faf7fa;
@@ -114,8 +122,6 @@
 
 /* ============================================================================
  * Tailwind CSS v4 Theme Mapping
- * Gives you classes like: `bg-brand`, `text-brand`, `bg-brand-soft`,
- * `bg-card-pink`, `bg-card-mint`, `font-display`, `font-sans`, `text-ink`
  * ============================================================================ */
 @theme inline {
   --color-brand: var(--theme-primary);
@@ -141,6 +147,15 @@
   --font-mono: var(--font-geist-mono), monospace;
 }
 
+/* Dynamic Linear Gradient Utilities */
+.bg-brand-gradient {
+  background-image: var(--theme-gradient);
+}
+
+.bg-brand-gradient-soft {
+  background-image: var(--theme-gradient-soft);
+}
+
 body {
   background-color: var(--theme-surface);
   color: var(--theme-text);
@@ -150,7 +165,6 @@ body {
     color 0.25s ease;
 }
 
-/* Centered card helper used by src/app/error.tsx */
 #content_center {
   position: absolute;
   top: 50%;
